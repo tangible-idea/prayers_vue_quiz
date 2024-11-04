@@ -19,7 +19,7 @@
       <!-- 헤더 -->
       <div class="quiz-header">
         <h2>레벨 {{ currentQuestion.level }}</h2>
-        <div class="score">내 점수: {{ score }} 달란트</div>
+        <div class="score">내 점수: {{ score }} {{unit}}</div>
       </div>
 
       <!-- 질문 섹션 -->
@@ -43,7 +43,7 @@
         <transition name="fade">
           <div class="popup">
             <p v-if="isCorrect">
-              정답입니다! +{{ currentQuestion.talent }} 달란트를 획득했습니다.
+              정답입니다! +{{ currentQuestion.talent }} {{unit}} 획득했습니다.
             </p>
             <p v-else>
               오답입니다! 정답은 "{{ currentQuestion.answer }}" 입니다.
@@ -57,7 +57,7 @@
       <div v-if="quizCompleted" class="overlay">
         <div class="completion-screen">
           <h2>퀴즈 완료!</h2>
-          <p>최종 점수: {{ score }} 달란트</p>
+          <p>최종 점수: {{ score }} {{unit}}</p>
           <button @click="resetQuiz" class="restart-button">다시 시작하기</button>
         </div>
       </div>
@@ -85,6 +85,7 @@ export default {
     const isAnswering = ref(false);
     const progressBarWidth = ref(100);
     const progressInterval = ref(null);
+    const unit = "코인";
 
     // 현재 질문 계산
     const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
