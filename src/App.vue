@@ -120,23 +120,23 @@ export default {
       return [
         {
           level: 1,
-          question: '“여호와는 나의 목자시니 내게 부족함이 없으리로다.”',
-          options: ['창세기', '시편', '이사야'],
-          answer: '시편',
+          question: 'hello1',
+          options: ['1', '2', '3'],
+          answer: '1',
           talent: 3,
         },
         {
           level: 2,
-          question: '“너희는 먼저 그의 나라와 그의 의를 구하라 그리하면 이 모든 것을 너희에게 더하시리라.”',
-          options: ['베드로', '마태', '요한'],
-          answer: '마태',
+          question: 'hello2',
+          options: ['11', '22', '33'],
+          answer: '22',
           talent: 5,
         },
         {
           level: 3,
-          question: '“모든 것을 할 수 있는 그리스도 안에서 내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라.”',
-          options: ['빌립보서 4:13', '로마서 8:28', '요한복음 3:16'],
-          answer: '빌립보서 4:13',
+          question: '“hello3',
+          options: ['111', '222', '333'],
+          answer: '333',
           talent: 7,
         },
       ];
