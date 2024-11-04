@@ -98,7 +98,7 @@ export default {
 
         for (const level of levels) {
           const response = await axios.get('https://aiconnect-fjptw3x2.b4a.run/bot/GPT-4o', {
-            params: { request: `Generate a Bible quiz question for level ${level}. Include question, options, answer, and talent.` },
+            params: { request: `Generate a Bible quiz question for level ${level}. Include question, options, answer, and talent. give me with a certain format like this: "{ data: { question: '', options: [], answer: '', talent: 3, level: 1 } }"` },
           });
           // API 응답 형식에 따라 처리 (예시)
           // { data: { question: '', options: [], answer: '', talent: 3, level: 1 } }
