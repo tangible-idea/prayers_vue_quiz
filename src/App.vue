@@ -85,7 +85,7 @@ export default {
     const isAnswering = ref(false);
     const progressBarWidth = ref(100);
     const progressInterval = ref(null);
-    const unit = "코인";
+    const unit = ref("코인");
 
     // 현재 질문 계산
     const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
