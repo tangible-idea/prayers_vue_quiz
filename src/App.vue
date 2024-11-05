@@ -2,12 +2,12 @@
   <div id="app">
     <!-- 시작 화면 -->
     <div v-if="!quizStarted" class="start-screen">
-      <h1>오늘의 퀴즈</h1>
+      <h3>오늘의 퀴즈</h3>
       <button @click="startQuiz" class="start-button">퀴즈 시작하기</button>
     </div>
 
     <!-- 퀴즈 화면 -->
-    <div v-else class="quiz-container">
+    <div v-else-if="question" class="quiz-container">
       <!-- 프로그레스바 타이머 -->
       <div class="progress-bar-container">
         <div
@@ -18,16 +18,16 @@
 
       <!-- 헤더 -->
       <div class="quiz-header">
-        <h2>레벨 {{ currentQuestion.level }}</h2>
+        <h2>레벨 {{ question.level }}</h2>
         <div class="score">내 점수: {{ score }} {{unit}}</div>
       </div>
 
       <!-- 질문 섹션 -->
       <div class="question-section">
-        <p class="question">{{ currentQuestion.question }}</p>
+        <p class="question">{{ question.question }}</p>
         <div class="options">
           <button
-            v-for="(option, index) in currentQuestion.options"
+            v-for="(option, index) in question.options"
             :key="index"
             @click="selectAnswer(option)"
             class="option-button"
@@ -43,10 +43,10 @@
         <transition name="fade">
           <div class="popup">
             <p v-if="isCorrect">
-              정답입니다! +{{ currentQuestion.talent }} {{unit}} 획득했습니다.
+              정답입니다! +{{ question.talent }} {{unit}} 획득했습니다.
             </p>
             <p v-else>
-              오답입니다! 정답은 "{{ currentQuestion.answer }}" 입니다.
+              오답입니다! 정답은 "{{ question.answer }}" 입니다.
             </p>
             <button @click="closePopup" class="close-button">확인</button>
           </div>
@@ -62,11 +62,16 @@
         </div>
       </div>
     </div>
+
+    <!-- 로딩 상태 -->
+    <div v-else class="loading">
+      <p>퀴즈를 불러오는 중...</p>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
 export default {
@@ -75,8 +80,6 @@ export default {
     // 상태 관리
     const quizStarted = ref(false);
     const quizCompleted = ref(false);
-    const questions = ref([]);
-    const currentQuestionIndex = ref(0);
     const timer = ref(15);
     const timerInterval = ref(null);
     const score = ref(0);
@@ -87,66 +90,45 @@ export default {
     const progressInterval = ref(null);
     const unit = ref("코인");
 
-    // 현재 질문 계산
-    const currentQuestion = computed(() => questions.value[currentQuestionIndex.value]);
+    // 질문 상태
+    const question = ref(null);
 
     // 질문 가져오기
-    const fetchQuestions = async () => {
+    const fetchQuestion = async () => {
       try {
-        // API 요청: 각 레벨별로 하나씩 질문을 가져온다고 가정
-        const levels = [1, 2, 3];
-        const fetchedQuestions = [];
+        const response = await axios.get('https://ai.tangibly.link/bot/Claude-3.5-Haiku', {
+          params: {
+            request: `Generate a single Bible quiz question in Korean. Include question, options, answer, and talent. Provide a certain format in JSON : "{ data: { question: '', options: [], answer: '', talent: 3, level: 1 } } Do not put any other message besides the JSON format."`,
+            apikey: 'oqblhi8pIB7QFd1aNeRYHh7xQfdEHGW9yu3G6EHLiQE'
+          },
+        });
 
-        for (const level of levels) {
-          const response = await axios.get('https://ai.tangibly.link/bot/GPT-4o', {
-            params: { request: `Generate a Bible quiz question for level ${level}. Include question, options, answer, and talent. give me with a certain format like this: "{ data: { question: '', options: [], answer: '', talent: 3, level: 1 } }"` },
-          });
-          // API 응답 형식에 따라 처리 (예시)
-          // { data: { question: '', options: [], answer: '', talent: 3, level: 1 } }
-          if (response.data) {
-            fetchedQuestions.push(response.data);
-          }
-        }
-
-        questions.value = fetchedQuestions;
+        var rawData= response.data.message;
+        console.log(rawData);
+        const parsedData = JSON.parse(rawData);
+        console.log(parsedData.data);
+        
+        // API 응답 확인 및 샘플 질문 대체
+        question.value = parsedData.data || getSampleQuestion();
       } catch (error) {
         console.error('퀴즈 질문을 가져오는 중 오류 발생:', error);
-        // 샘플 질문 사용
-        questions.value = getSampleQuestions();
+        question.value = getSampleQuestion();
       }
     };
 
     // 샘플 질문 (API 실패 시)
-    const getSampleQuestions = () => {
-      return [
-        {
-          level: 1,
-          question: 'hello1',
-          options: ['1', '2', '3'],
-          answer: '1',
-          talent: 3,
-        },
-        {
-          level: 2,
-          question: 'hello2',
-          options: ['11', '22', '33'],
-          answer: '22',
-          talent: 5,
-        },
-        {
-          level: 3,
-          question: '“hello3',
-          options: ['111', '222', '333'],
-          answer: '333',
-          talent: 7,
-        },
-      ];
-    };
+    const getSampleQuestion = () => ({
+      level: 1,
+      question: '가장 유명한?',
+      options: ['1 3:16', '2 1:1', '3 23편'],
+      answer: '1 3:16',
+      talent: 5
+    });
 
     // 퀴즈 시작
     const startQuiz = async () => {
       quizStarted.value = true;
-      await fetchQuestions();
+      await fetchQuestion();
       startTimer();
       startProgressBar();
     };
@@ -171,7 +153,7 @@ export default {
       if (progressInterval.value) clearInterval(progressInterval.value);
       progressInterval.value = setInterval(() => {
         if (progressBarWidth.value > 0) {
-          progressBarWidth.value -= (100 / 15) / 10; // 15초 동안 부드럽게 줄어들도록
+          progressBarWidth.value -= (100 / 15) / 10;
         } else {
           progressBarWidth.value = 0;
           clearInterval(progressInterval.value);
@@ -181,13 +163,14 @@ export default {
 
     // 답안 선택
     const selectAnswer = (selectedOption) => {
-      if (isAnswering.value) return;
+      if (isAnswering.value || !question.value) return;
+      
       isAnswering.value = true;
       clearInterval(timerInterval.value);
       clearInterval(progressInterval.value);
-      const current = currentQuestion.value;
-      if (selectedOption === current.answer) {
-        score.value += current.talent;
+      
+      if (selectedOption === question.value.answer) {
+        score.value += question.value.talent;
         isCorrect.value = true;
       } else {
         isCorrect.value = false;
@@ -201,25 +184,18 @@ export default {
       showPopup.value = true;
     };
 
-    // 팝업 닫기 및 다음 질문으로 이동
+    // 팝업 닫기
     const closePopup = () => {
       showPopup.value = false;
       isAnswering.value = false;
-      if (currentQuestionIndex.value < questions.value.length - 1) {
-        currentQuestionIndex.value++;
-        startTimer();
-        startProgressBar();
-      } else {
-        quizCompleted.value = true;
-      }
+      quizCompleted.value = true;
     };
 
     // 퀴즈 리셋
     const resetQuiz = () => {
       quizStarted.value = false;
       quizCompleted.value = false;
-      questions.value = [];
-      currentQuestionIndex.value = 0;
+      question.value = null;
       timer.value = 15;
       score.value = 0;
       showPopup.value = false;
@@ -227,15 +203,9 @@ export default {
       progressBarWidth.value = 100;
     };
 
-    onMounted(() => {
-      // 초기화 작업 (필요시 추가)
-    });
-
     return {
       quizStarted,
       quizCompleted,
-      questions,
-      currentQuestionIndex,
       timer,
       score,
       showPopup,
@@ -245,14 +215,24 @@ export default {
       selectAnswer,
       closePopup,
       resetQuiz,
-      currentQuestion,
+      question,
       progressBarWidth,
+      unit
     };
   },
 };
 </script>
 
 <style>
+/* 기존 스타일 유지 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 20px;
+}
+
 /* 색상 변수 */
 :root {
   --main-color: #D2B48C;
