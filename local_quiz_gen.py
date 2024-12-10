@@ -44,10 +44,10 @@ async def gen(book_name="창세기", how_many=10, progress_text=None, progress_b
 
 
 
-st.header("Bible Quiz 생성기")
-st.subheader("1. 랜덤한 구절을 찾아 퀴즈 생성하기")
+st.header("Bible Quiz gen")
+st.subheader("Gen a quiz for a particular verse")
 
-book_name = st.text_input("성경 책 이름", placeholder="예: 창세기, 요한복음")
+book_name = st.text_input("Book name", placeholder="예: 창세기, 요한복음")
 count = st.text_input("개수", value="2", max_chars=2)
 button1_clicked = st.button(f"{count}개의 퀴즈 만들기")
 if button1_clicked:
