@@ -44,10 +44,16 @@ async def gen(book_name="창세기", how_many=10, progress_text=None, progress_b
 
 
 
-st.header("Bible Quiz gen")
-st.subheader("Gen a quiz for a particular verse")
+st.header("BQ gen")
+st.subheader("현재 퀴즈DB 조회")
+button2_clicked = st.button("DB 검색하기")
+if button2_clicked:
+    result = supabase.table('quiz').select('*').execute()
+    st.dataframe(result.data)
 
-book_name = st.text_input("Book name", placeholder="예: 창세기, 요한복음")
+st.subheader("퀴즈 생성하고 자동업로드")
+
+book_name = st.text_input("Book name", placeholder="예: Genesis, Exodus, Leviticus, Numbers, Deuteronomy")
 count = st.text_input("개수", value="2", max_chars=2)
 button1_clicked = st.button(f"{count}개의 퀴즈 만들기")
 if button1_clicked:

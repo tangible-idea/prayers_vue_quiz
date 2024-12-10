@@ -4,7 +4,7 @@ from supabase import create_client, Client
 #print(os.environ)
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
-POE_KEY: str = os.environ.get("POE_API_KEY")
+POE_KEY: str = os.environ.get("POE_KEY")
 supabase: Client = create_client(url, key)
 
 
