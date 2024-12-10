@@ -3,6 +3,8 @@ from supabase_client import supabase
 from asyncio import run
 import json
 import time
+from PIL import Image
+import io
 
 import streamlit as st
 
@@ -45,40 +47,114 @@ async def gen(book_name="창세기", how_many=10, progress_text=None, progress_b
 
 
 st.header("BQ gen")
-st.subheader("현재 퀴즈DB 조회")
-button2_clicked = st.button("DB 조회")
-if button2_clicked:
-    result = supabase.table('quiz').select('id,question,options,answer,reference,type,difficulty').execute()
-    st.dataframe(result.data, selection_mode="single-row")
 
-button3_redundant_clicked = st.button("중복의심되는 퀴즈 찾기")
-if button3_redundant_clicked:
-    with st.spinner("중복 퀴즈를 검색중입니다..."):
-        result = supabase.table('quiz').select('id,question,options').execute()
-        query_to_llm = f'{result} \n\n 여기에서 유사한 제목의 퀴즈를 찾고, id를 set로 출력해줘. 예시: 중복의심제목: [13,194,222...], 중복의심제목: [3,4...]'
-        print(f"query_to_llm : {query_to_llm}")
+tab1, tab2, tab3 = st.tabs(["DB 관리", "퀴즈 생성", "이미지 업로드"])
 
-        async def check_redundant():
-            from_llm = await claude35Sonnet200k(query_to_llm)
-            print("=====")
-            print(from_llm)
-            st.text_area("중복검출된 퀴즈들", value=from_llm, height=350)
+with tab1:
+    col1, col2 = st.columns(2)
+    with col1:
+        button2_clicked = st.button("DB 조회")
+    with col2:
+        button3_redundant_clicked = st.button("중복의심되는 퀴즈 찾기")
 
-        run(check_redundant())
+    if button2_clicked:
+        result = supabase.table('quiz').select('id,question,options,answer,reference,type,difficulty').execute()
+        st.dataframe(result.data, selection_mode="single-row")
 
-st.subheader("퀴즈 생성하고 자동업로드")
+    if button3_redundant_clicked:
+        with st.spinner("중복 퀴즈를 검색중입니다..."):
+            result = supabase.table('quiz').select('id,question,options').execute()
+            query_to_llm = f'{result} \n\n 여기에서 유사한 제목의 퀴즈를 찾고, id를 set로 출력해줘. 예시: 중복의심제목: [13,194,222...], 중복의심제목: [3,4...]'
+            print(f"query_to_llm : {query_to_llm}")
 
-book_name = st.text_input("Book name", placeholder="예: Genesis, Exodus, Leviticus, Numbers, Deuteronomy")
-count = st.text_input("개수", value="2", max_chars=2)
-button1_clicked = st.button(f"{count}개의 퀴즈 만들기")
-if button1_clicked:
-    progress_text = st.empty()
-    progress_bar = st.progress(0)
-    #total = int(count)
-    #for i in range(total):
+            async def check_redundant():
+                from_llm = await claude35Sonnet200k(query_to_llm)
+                print("=====")
+                print(from_llm)
+                st.text_area("중복검출된 퀴즈들", value=from_llm, height=350)
+
+            run(check_redundant())
+
+with tab2:
+    book_name = st.text_input("Book name", placeholder="예: Genesis, Exodus, Leviticus, Numbers, Deuteronomy")
+    count = st.text_input("개수", value="2", max_chars=2)
+    button1_clicked = st.button(f"{count}개의 퀴즈 만들기")
+    if button1_clicked:
+        progress_text = st.empty()
+        progress_bar = st.progress(0)
+
+        progress_text.text("퀴즈를 생성중입니다...")
+        progress_bar.progress(50)
+
+        run(gen(book_name, int(count), progress_text, progress_bar))
+
+        progress_text.text("완료!")
+        progress_bar.empty()
+
+with tab3:
+    bible_chapters = {
+        "창세기": "Genesis", "출애굽기": "Exodus", "레위기": "Leviticus", "민수기": "Numbers", "신명기": "Deuteronomy",
+        "여호수아": "Joshua", "사사기": "Judges", "룻기": "Ruth", "사무엘상": "1_Samuel", "사무엘하": "2_Samuel",
+        "열왕기상": "1_Kings", "열왕기하": "2_Kings", "역대상": "1_Chronicles", "역대하": "2_Chronicles", "에스라": "Ezra",
+        "느헤미야": "Nehemiah", "에스더": "Esther", "욥기": "Job", "시편": "Psalms", "잠언": "Proverbs",
+        "전도서": "Ecclesiastes", "아가": "Song_of_Solomon", "이사야": "Isaiah", "예레미야": "Jeremiah", "예레미야애가": "Lamentations",
+        "에스겔": "Ezekiel", "다니엘": "Daniel", "호세아": "Hosea", "요엘": "Joel", "아모스": "Amos",
+        "오바댜": "Obadiah", "요나": "Jonah", "미가": "Micah", "나훔": "Nahum", "하박국": "Habakkuk",
+        "스바냐": "Zephaniah", "학개": "Haggai", "스가랴": "Zechariah", "말라기": "Malachi",
+        "마태복음": "Matthew", "마가복음": "Mark", "누가복음": "Luke", "요한복음": "John",
+        "사도행전": "Acts", "로마서": "Romans", "고린도전서": "1_Corinthians", "고린도후서": "2_Corinthians",
+        "갈라디아서": "Galatians", "에베소서": "Ephesians", "빌립보서": "Philippians", "골로새서": "Colossians",
+        "데살로니가전서": "1_Thessalonians", "데살로니가후서": "2_Thessalonians", "디모데전서": "1_Timothy", "디모데후서": "2_Timothy",
+        "디도서": "Titus", "빌레몬서": "Philemon", "히브리서": "Hebrews", "야고보서": "James",
+        "베드로전서": "1_Peter", "베드로후서": "2_Peter", "요한일서": "1_John", "요한이서": "2_John",
+        "요한삼서": "3_John", "유다서": "Jude", "요한계시록": "Revelation"
+    }
     
-    time.sleep(1)
-    run(gen(book_name, int(count), progress_text, progress_bar))
-
-    progress_text.text("완료!")
-    progress_bar.empty()
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_korean_chapter = st.selectbox("성경 책을 선택하세요", list(bible_chapters.keys()))
+        selected_english_chapter = bible_chapters[selected_korean_chapter]
+    with col2:
+        chapter_number = st.number_input("장 번호", min_value=1, value=1, step=1)
+    
+    uploaded_file = st.file_uploader("이미지 파일을 선택하세요", type=['jpg'])
+    if uploaded_file is not None:
+        with st.spinner("이미지를 업로드 중입니다..."):
+            # Open the uploaded image
+            image = Image.open(uploaded_file)
+            
+            # Resize or compress the image to be under 2MB
+            max_size = (1024, 1024)  # Example max size, adjust as needed
+            image.thumbnail(max_size)
+            
+            # Save the image to a bytes buffer
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='JPEG', quality=85)  # Adjust quality for compression
+            img_byte_arr.seek(0)
+            file_bytes = img_byte_arr.read()
+            
+            # Display the resized image
+            st.image(image, caption="업로드된 이미지 (압축됨)")
+            
+            # Create filename with English chapter name and verse
+            file_extension = uploaded_file.name.split('.')[-1].lower()
+            filename = f"{selected_english_chapter}_{chapter_number}.{file_extension}"
+            
+            try:
+                # Upload to Supabase storage with overwrite
+                res = supabase.storage.from_('bq').upload(
+                    path=filename,
+                    file=file_bytes,
+                    file_options={
+                        "content-type": "image/jpeg",
+                        "upsert": "true"
+                    }
+                )
+                
+                # Get the public URL
+                public_url = supabase.storage.from_('bq').get_public_url(filename)
+                st.success(f"이미지가 성공적으로 업로드되었습니다!")
+                st.code(public_url, language="text")
+                
+            except Exception as e:
+                st.error(f"업로드 중 오류가 발생했습니다: {str(e)}")
