@@ -9,6 +9,7 @@ import io
 import streamlit as st
 
 
+
 async def gen(book_name="창세기", how_many=10, progress_text=None, progress_bar=None):
     header_query= f"Generate {how_many} of Bible quiz questions for book name: {book_name} in Korean. "
     query_to_llm = header_query + 'Include question, options, answer, and reference(where the quiz from). Provide a certain format in JSON : "{ "data": [{ "question":"", "difficulty": (number 1-10), options: [...], answer: "", reference: "", type: "bible"]} Do not put any other message besides the JSON format. (even without ```json or ```)'
@@ -45,6 +46,17 @@ async def gen(book_name="창세기", how_many=10, progress_text=None, progress_b
         st.text_area("생성된 퀴즈", value=str(result_rpc.data) + "\n\n" + str(quiz), height=110)
 
 
+st.set_page_config(
+    page_title="BQ Gen",
+    page_icon="🧊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://tangibleidea.net',
+        'Report a bug': "mailto:mark.choi@tangibleidea.net",
+        'About': "# This is a header. This is an *extremely* cool app!"
+    }
+)
 
 st.header("BQ gen")
 
