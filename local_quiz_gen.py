@@ -48,7 +48,7 @@ async def gen(book_name="창세기", how_many=10, progress_text=None, progress_b
 
 st.header("BQ gen")
 
-tab1, tab2, tab3 = st.tabs(["DB 관리", "퀴즈 생성", "이미지 업로드"])
+tab1, tab2, tab3, tab4 = st.tabs(["1.DB 관리", "2.퀴즈 생성", "3.이미지 업로드", "4.만든 퀴즈 풀어보기"])
 
 with tab1:
     col1, col2 = st.columns(2)
@@ -158,3 +158,9 @@ with tab3:
                 
             except Exception as e:
                 st.error(f"업로드 중 오류가 발생했습니다: {str(e)}")
+
+with tab4:
+    book_name = st.text_input("풀어볼 내용", placeholder="예: Genesis 2, Exodus 17")
+    button4_clicked = st.button("퀴즈 풀기")
+    if button4_clicked:
+        st.text("준비중...")
