@@ -69,20 +69,35 @@ with tab1:
     with col2:
         button3_redundant_clicked = st.button("중복의심되는 퀴즈 찾기")
 
+        target_deletion= st.text_input("삭제할 DB id array:", placeholder="[12,36].. 와 같이 적어주세요")
+        execute_deletion_clicked = st.button("퀴즈 DB에서 삭제하기")
+
     if button2_clicked:
         result = supabase.table('quiz').select('id,question,options,answer,reference,type,difficulty').execute()
         st.dataframe(result.data, selection_mode="single-row")
 
+    if execute_deletion_clicked:
+        target_deletion= target_deletion.replace("[", "{")
+        target_deletion= target_deletion.replace("]", "}")
+        result_rpc = supabase.rpc('delete_quizzes_by_ids', {
+                        'id_array': target_deletion
+                    }).execute()
+        print("result_rpc ====> " + str(result_rpc.data))
+        st.text_area("삭제된 퀴즈", value=str(result_rpc.data))
+
+
     if button3_redundant_clicked:
         with st.spinner("중복 퀴즈를 검색중입니다..."):
             result = supabase.table('quiz').select('id,question,options').execute()
-            query_to_llm = f'{result} \n\n 여기에서 유사한 제목의 퀴즈를 찾고, id를 set로 출력해줘. 예시: 중복의심제목: [13,194,222...], 중복의심제목: [3,4...]'
+            query_to_llm = str(result) + '\n\n 여기에서 유사한 제목의 퀴즈를 찾고, id를 set로 출력해줘. 예시: 중복의심제목: [13,194,222...], 중복의심제목: [3,4...]'
             print(f"query_to_llm : {query_to_llm}")
 
             async def check_redundant():
                 from_llm = await claude35Sonnet200k(query_to_llm)
+                
                 print("=====")
                 print(from_llm)
+
                 st.text_area("중복검출된 퀴즈들", value=from_llm, height=350)
 
             run(check_redundant())
