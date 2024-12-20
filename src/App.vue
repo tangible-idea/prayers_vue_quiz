@@ -30,45 +30,81 @@
 import { createClient } from '@supabase/supabase-js';
 import { ref } from 'vue';
 
-// Initialize Supabase client
+// Supabase Client Initialization
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default {
   setup() {
-    // Reactive state
-    const quizzes = ref([]); // List of quizzes
-    const isAnswering = ref(false); // Tracks if a user is currently answering
-    const quizStarted = ref(false); // Tracks if the quiz has started
+    // Reactive State
+    const quizzes = ref([]);
+    const isAnswering = ref(false);
+    const quizStarted = ref(false);
 
-    // Fetch quizzes from Supabase
-    const fetchQuizzes = async () => {
-      const { data, error } = await supabase.from('quiz').select('*');
-
-      if (error) {
-        console.error('Error fetching quizzes:', error);
-        return;
-      }
-
-      // Populate quizzes with the fetched data
-      if (data.length >= 3) {
-        quizzes.value = data.slice(0, 3); // Limit to the first 3 quizzes
-      } else {
-        quizzes.value = data; // Use all available quizzes if less than 3
+    // Helper: Decode Base64 string to IDs
+    const decodeBase64Ids = (base64String) => {
+      console.log('Decoding Base64 string:', base64String);
+      try {
+        const decodedString = atob(base64String); // Decode Base64 string
+        console.log('Decoded string:', decodedString);
+        const ids = JSON.parse(decodedString); // Parse JSON string to array
+        console.log('Decoded IDs:', ids);
+        return ids;
+      } catch (err) {
+        console.error('Error decoding Base64 IDs:', err);
+        return null;
       }
     };
 
-    // Start the quiz
+    // Fetch Quizzes Based on Decoded IDs
+    const fetchQuizzes = async (ids) => {
+      console.log('Fetching quizzes for IDs:', ids);
+      try {
+        let query = supabase.from('quiz').select('*'); // Use the correct table name
+        if (ids) {
+          query = query.in('id', ids); // Apply filter for IDs
+        }
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error fetching quizzes:', error);
+          return;
+        }
+
+        console.log('Fetched quizzes:', data);
+        quizzes.value = data; // Populate quizzes with fetched data
+      } catch (err) {
+        console.error('Unexpected error fetching quizzes:', err);
+      }
+    };
+
+    // Start Quiz
     const startQuiz = async () => {
-      quizStarted.value = true; // Set the `quizStarted` flag to true
-      await fetchQuizzes(); // Fetch quizzes
+      console.log('Starting quiz...');
+      quizStarted.value = true; // Set quizStarted to true
+
+      // Get Base64-encoded IDs from the URL
+      const params = new URLSearchParams(window.location.search);
+      const encodedIds = params.get('ids'); // Get the "ids" query parameter
+      console.log('Encoded IDs from URL:', encodedIds);
+
+      if (encodedIds) {
+        const ids = decodeBase64Ids(encodedIds); // Decode Base64 string to get IDs
+        if (ids) {
+          await fetchQuizzes(ids); // Fetch quizzes based on the decoded IDs
+        } else {
+          console.error('No valid IDs found after decoding.');
+        }
+      } else {
+        console.warn('No IDs provided in the URL.');
+      }
     };
 
-    // Handle selecting an answer
+    // Handle Answer Selection
     const selectAnswer = (option) => {
       console.log('Selected answer:', option);
-      // Additional logic for handling answers can go here
+      // Add logic to handle the answer selection
     };
 
     return {
