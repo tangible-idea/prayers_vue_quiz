@@ -44,13 +44,9 @@ export default {
 
     // Helper: Decode Base64 string to IDs
     const decodeBase64Ids = (base64String) => {
-      console.log('Decoding Base64 string:', base64String);
       try {
         const decodedString = atob(base64String); // Decode Base64 string
-        console.log('Decoded string:', decodedString);
-        const ids = JSON.parse(decodedString); // Parse JSON string to array
-        console.log('Decoded IDs:', ids);
-        return ids;
+        return JSON.parse(decodedString); // Parse JSON string to array
       } catch (err) {
         console.error('Error decoding Base64 IDs:', err);
         return null;
@@ -59,11 +55,10 @@ export default {
 
     // Fetch Quizzes Based on Decoded IDs
     const fetchQuizzes = async (ids) => {
-      console.log('Fetching quizzes for IDs:', ids);
       try {
-        let query = supabase.from('quiz').select('*'); // Use the correct table name
+        let query = supabase.from('quiz').select('*');
         if (ids) {
-          query = query.in('id', ids); // Apply filter for IDs
+          query = query.in('id', ids); // Filter quizzes by IDs
         }
         const { data, error } = await query;
 
@@ -72,7 +67,6 @@ export default {
           return;
         }
 
-        console.log('Fetched quizzes:', data);
         quizzes.value = data; // Populate quizzes with fetched data
       } catch (err) {
         console.error('Unexpected error fetching quizzes:', err);
@@ -81,23 +75,17 @@ export default {
 
     // Start Quiz
     const startQuiz = async () => {
-      console.log('Starting quiz...');
       quizStarted.value = true; // Set quizStarted to true
 
       // Get Base64-encoded IDs from the URL
       const params = new URLSearchParams(window.location.search);
       const encodedIds = params.get('ids'); // Get the "ids" query parameter
-      console.log('Encoded IDs from URL:', encodedIds);
 
       if (encodedIds) {
         const ids = decodeBase64Ids(encodedIds); // Decode Base64 string to get IDs
         if (ids) {
           await fetchQuizzes(ids); // Fetch quizzes based on the decoded IDs
-        } else {
-          console.error('No valid IDs found after decoding.');
         }
-      } else {
-        console.warn('No IDs provided in the URL.');
       }
     };
 
