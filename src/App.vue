@@ -11,15 +11,35 @@
       <div v-for="quiz in quizzes" :key="quiz.id">
         <p class="question">{{ quiz.question }}</p>
         <div class="options">
-          <button
-            v-for="(option, index) in quiz.options"
-            :key="index"
-            @click="selectAnswer(option)"
-            class="option-button"
-            :disabled="isAnswering"
-          >
-            {{ option }}
-          </button>
+          <!-- If the quiz type is 'bible_verse', show a combobox -->
+          <div v-if="quiz.type === 'bible_verse'" class="combo-section">
+            <select v-model="selectedAnswer" class="bible-combobox">
+              <option disabled value="">Select a Bible Book</option>
+              <option v-for="(book, index) in bibleBooks" :key="index" :value="book">
+                {{ book }}
+              </option>
+            </select>
+            <button
+              @click="submitAnswer(quiz.id, selectedAnswer)"
+              class="submit-button"
+              :disabled="!selectedAnswer || isAnswering"
+            >
+              Submit Answer
+            </button>
+          </div>
+
+          <!-- If the quiz type is NOT 'bible_verse', show normal answer buttons -->
+          <div v-else>
+            <button
+              v-for="(option, index) in quiz.options"
+              :key="index"
+              @click="submitAnswer(quiz.id, option)"
+              class="option-button"
+              :disabled="isAnswering"
+            >
+              {{ option }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -41,157 +61,131 @@ export default {
     const quizzes = ref([]);
     const isAnswering = ref(false);
     const quizStarted = ref(false);
+    const selectedAnswer = ref(""); // Stores the selected answer for bible_verse quizzes
+    const decodedData = ref({}); // Decoded data from Base64
+
+    // Bible books in Korean
+    const bibleBooks = ref([
+      "창세기", "출애굽기", "레위기", "민수기", "신명기", "여호수아", "사사기", "룻기", "사무엘상", "사무엘하",
+      "열왕기상", "열왕기하", "역대상", "역대하", "에스라", "느헤미야", "에스더", "욥기", "시편", "잠언", "전도서",
+      "아가", "이사야", "예레미야", "예레미야애가", "에스겔", "다니엘", "호세아", "요엘", "아모스", "오바댜",
+      "요나", "미가", "나훔", "하박국", "스바냐", "학개", "스가랴", "말라기", "마태복음", "마가복음",
+      "누가복음", "요한복음", "사도행전", "로마서", "고린도전서", "고린도후서", "갈라디아서", "에베소서",
+      "빌립보서", "골로새서", "데살로니가전서", "데살로니가후서", "디모데전서", "디모데후서", "디도서",
+      "빌레몬서", "히브리서", "야고보서", "베드로전서", "베드로후서", "요한일서", "요한이서", "요한삼서",
+      "유다서", "요한계시록"
+    ]);
 
     // Helper: Decode Base64 string to retrieve quiz data (JSON format)
     const decodeBase64Data = (base64String) => {
-      console.log('Decoding Base64 string:', base64String);
+      console.log("Decoding Base64 string:", base64String);
       try {
         const decodedString = atob(base64String); // Decode Base64 string
-        console.log('Decoded string:', decodedString);
+        console.log("Decoded string:", decodedString);
 
         // Parse JSON string into an object
         const data = JSON.parse(decodedString);
-        console.log('Decoded Data (JSON):', data);
+        console.log("Decoded Data (JSON):", data);
+        decodedData.value = data; // Store the decoded data
         return data; // Return the parsed object
       } catch (err) {
-        console.error('Error decoding Base64 JSON data:', err);
+        console.error("Error decoding Base64 JSON data:", err);
         return null;
       }
     };
 
-    // Fetch Quizzes Based on Decoded IDs
-    const fetchQuizById = async (id) => {
-      console.log('Fetching quizzes for ID:', id);
-      try {
-        let query = supabase.from('quiz').select('*'); // Use the correct table name
-        if (id) {
-          query = query.eq('id', id); // Query specific quiz by ID
-        }
-        const { data, error } = await query;
+    // Fetch Quizzes Based on Decoded Data and Pick 1 Randomly
+  const fetchQuizByType = async (type) => {
+    console.log("Fetching quizzes for type:", type);
+    try {
+      const { data, error } = await supabase
+        .from("quiz")
+        .select("*")
+        .eq("type", type); // Filter quizzes by the type
 
-        if (error) {
-          console.error('Error fetching quizzes:', error);
-          return;
-        }
+      if (error) {
+        console.error("Error fetching quizzes:", error);
+      } else if (data && data.length > 0) {
+        // Randomly pick one quiz from the fetched data
+        const randomQuiz = data[Math.floor(Math.random() * data.length)];
+        console.log("Randomly picked quiz:", randomQuiz);
 
-        console.log('Fetched quizzes:', data);
-        quizzes.value = data; // Populate quizzes with fetched data
-      } catch (err) {
-        console.error('Unexpected error fetching quizzes:', err);
+        quizzes.value = [randomQuiz]; // Set the random quiz in the reactive state
+      } else {
+        console.warn("No quizzes found for the given type.");
       }
-    };  
+    } catch (err) {
+      console.error("Unexpected error fetching quizzes:", err);
+    }
+  };
 
-    // Fetch a Random Quiz Based on type
-    const fetchQuizByType = async (type) => {
-      console.log('Fetching a random quiz for type:', type);
-      try {
-        const { data, error } = await supabase
-          .from('quiz')
-          .select('*')
-          .eq('type', type);
+    // Submit Answer
+    const submitAnswer = (quizId, answer) => {
+      console.log("Submitting answer for quiz ID:", quizId);
+      console.log("Selected answer:", answer);
+      isAnswering.value = true;
 
-        if (error) {
-          console.error('Error fetching quizzes:', error);
-        } else {
-          const randomQuiz = data[Math.floor(Math.random() * data.length)];
-          console.log('Fetched a random quiz:', randomQuiz);
-          quizzes.value = [randomQuiz]; // Populate quizzes with the single fetched quiz
-        }
-      } catch (err) {
-        console.error('Unexpected error fetching a random quiz:', err);
-      }
+      // Simulate answer submission (replace with actual logic)
+      setTimeout(() => {
+        console.log("Answer submitted!");
+        isAnswering.value = false;
+      }, 1000);
     };
 
     // Start Quiz
     const startQuiz = async () => {
-      console.log('Starting quiz...');
+      console.log("Starting quiz...");
       quizStarted.value = true; // Set quizStarted to true
 
       // Extract Base64-encoded data from the URL (path or query string)
-      const base64String = window.location.pathname.split('/').pop(); // Extract the last part of the URL
-      console.log('Base64 String from URL:', base64String);
+      const base64String = window.location.pathname.split("/").pop(); // Extract the last part of the URL
+      console.log("Base64 String from URL:", base64String);
 
       if (base64String) {
-        const decodedData = decodeBase64Data(base64String); // Decode Base64 string
-        if(decodedData) {
-          console.log('Decoded Data2:', decodedData);
-          if(decodedData.id) {
-              await fetchQuizById(decodedData.id); // Fetch quizzes based on the decoded ID
-          }else if(decodedData.type) {
-              console.log('Fetching quizzes for type:', decodedData.type);
-              await fetchQuizByType(decodedData.type); // Fetch quizzes based on the decoded type
-          }
+        const decoded = decodeBase64Data(base64String); // Decode Base64 string
+        if (decoded && decoded.type) {
+          await fetchQuizByType(decoded.type); // Fetch quizzes based on the decoded type
         } else {
-          console.error('Invalid or missing ID in decoded data.');
+          console.error("Invalid Base64 string or missing type.");
         }
       } else {
-        console.warn('No Base64 string provided in the URL.');
+        console.warn("No Base64 string provided in the URL.");
       }
-    };
-
-    // Handle Answer Selection
-    const selectAnswer = (option) => {
-      console.log('Selected answer:', option);
-      // Add logic to handle the answer selection
     };
 
     return {
       quizzes,
       isAnswering,
       quizStarted,
+      selectedAnswer,
+      bibleBooks,
       startQuiz,
-      selectAnswer,
+      submitAnswer,
     };
   },
 };
 </script>
 
 <style>
-/* 기존 스타일 유지 */
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 20px;
-}
-
-/* 색상 변수 */
-:root {
-  --main-color: #D2B48C;
-  --secondary-color: #C1A378;
-  --accent-color: #B08F68;
-  --text-color: #333;
-  --popup-bg: rgba(0, 0, 0, 0.5);
-  --white: #fff;
-  --light-bg: #f5f5dc;
-}
-
-/* 전반적인 스타일 */
-#app {
-  font-family: 'Arial', sans-serif;
-  text-align: center;
-  color: var(--text-color);
-  min-height: 100vh;
-  background-color: var(--light-bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* 시작 화면 및 완료 화면 */
-.start-screen,
-.completion-screen {
+/* Add style for the combobox */
+.combo-section {
   background-color: var(--white);
-  padding: 40px;
+  padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 20px;
 }
 
-.start-button,
-.option-button,
-.close-button,
-.restart-button {
+.bible-combobox {
+  width: 50%;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.submit-button {
   background-color: var(--secondary-color);
   color: var(--white);
   border: none;
@@ -203,111 +197,7 @@ export default {
   transition: background-color 0.3s;
 }
 
-.start-button:hover,
-.option-button:hover,
-.close-button:hover,
-.restart-button:hover {
+.submit-button:hover {
   background-color: var(--main-color);
-}
-
-/* 퀴즈 헤더 */
-.quiz-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 20px 0;
-  background-color: var(--accent-color);
-  padding: 10px 20px;
-  border-radius: 5px;
-  color: var(--white);
-}
-
-.score {
-  font-size: 18px;
-}
-
-/* 프로그레스바 */
-.progress-bar-container {
-  width: 100%;
-  height: 10px;
-  background-color: #ddd;
-  position: fixed;
-  top: 0;
-  left: 0;
-}
-
-.progress-bar {
-  height: 100%;
-  background-color: var(--secondary-color);
-  transition: width 0.1s linear;
-}
-
-/* 질문 섹션 */
-.question-section {
-  background-color: var(--white);
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin: 20px;
-}
-
-.question {
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
-.options {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.option-button {
-  width: 80%;
-  margin: 10px 0;
-}
-
-/* 오버레이 및 팝업 */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--popup-bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-}
-
-.popup {
-  background-color: var(--white);
-  padding: 30px;
-  border-radius: 10px;
-  text-align: center;
-  animation: popin 0.5s ease-out;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-@keyframes popin {
-  from {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 </style>
