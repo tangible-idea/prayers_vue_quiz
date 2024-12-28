@@ -43,12 +43,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Popup Section -->
+    <div v-if="showPopup" class="overlay">
+      <div class="popup">
+        <h3 v-if="isCorrect">🎉 Congratulations! You answered correctly! 🎉</h3>
+        <h3 v-else>❌ Wrong answer. Better luck next time! ❌</h3>
+        <p v-if="isCorrect">Your reward: {{ reward }}</p>
+        <button @click="closePopup" class="close-button">Close</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { createClient } from '@supabase/supabase-js';
-import { ref } from 'vue';
+import { createClient } from "@supabase/supabase-js";
+import { ref } from "vue";
 
 // Supabase Client Initialization
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -63,17 +73,79 @@ export default {
     const quizStarted = ref(false);
     const selectedAnswer = ref(""); // Stores the selected answer for bible_verse quizzes
     const decodedData = ref({}); // Decoded data from Base64
+    const showPopup = ref(false); // Controls the popup visibility
+    const isCorrect = ref(false); // Tracks if the user's answer is correct
+    const reward = ref(""); // Stores the reward message
+    const answeredQuizIds = ref(JSON.parse(localStorage.getItem("answeredQuizzes")) || []); // Track answered quizzes
 
     // Bible books in Korean
     const bibleBooks = ref([
-      "창세기", "출애굽기", "레위기", "민수기", "신명기", "여호수아", "사사기", "룻기", "사무엘상", "사무엘하",
-      "열왕기상", "열왕기하", "역대상", "역대하", "에스라", "느헤미야", "에스더", "욥기", "시편", "잠언", "전도서",
-      "아가", "이사야", "예레미야", "예레미야애가", "에스겔", "다니엘", "호세아", "요엘", "아모스", "오바댜",
-      "요나", "미가", "나훔", "하박국", "스바냐", "학개", "스가랴", "말라기", "마태복음", "마가복음",
-      "누가복음", "요한복음", "사도행전", "로마서", "고린도전서", "고린도후서", "갈라디아서", "에베소서",
-      "빌립보서", "골로새서", "데살로니가전서", "데살로니가후서", "디모데전서", "디모데후서", "디도서",
-      "빌레몬서", "히브리서", "야고보서", "베드로전서", "베드로후서", "요한일서", "요한이서", "요한삼서",
-      "유다서", "요한계시록"
+      "창세기",
+      "출애굽기",
+      "레위기",
+      "민수기",
+      "신명기",
+      "여호수아",
+      "사사기",
+      "룻기",
+      "사무엘상",
+      "사무엘하",
+      "열왕기상",
+      "열왕기하",
+      "역대상",
+      "역대하",
+      "에스라",
+      "느헤미야",
+      "에스더",
+      "욥기",
+      "시편",
+      "잠언",
+      "전도서",
+      "아가",
+      "이사야",
+      "예레미야",
+      "예레미야애가",
+      "에스겔",
+      "다니엘",
+      "호세아",
+      "요엘",
+      "아모스",
+      "오바댜",
+      "요나",
+      "미가",
+      "나훔",
+      "하박국",
+      "스바냐",
+      "학개",
+      "스가랴",
+      "말라기",
+      "마태복음",
+      "마가복음",
+      "누가복음",
+      "요한복음",
+      "사도행전",
+      "로마서",
+      "고린도전서",
+      "고린도후서",
+      "갈라디아서",
+      "에베소서",
+      "빌립보서",
+      "골로새서",
+      "데살로니가전서",
+      "데살로니가후서",
+      "디모데전서",
+      "디모데후서",
+      "디도서",
+      "빌레몬서",
+      "히브리서",
+      "야고보서",
+      "베드로전서",
+      "베드로후서",
+      "요한일서",
+      "요한이서",
+      "요한삼서",
+      "유다서",
+      "요한계시록",
     ]);
 
     // Helper: Decode Base64 string to retrieve quiz data (JSON format)
@@ -86,7 +158,6 @@ export default {
         // Parse JSON string into an object
         const data = JSON.parse(decodedString);
         console.log("Decoded Data (JSON):", data);
-        decodedData.value = data; // Store the decoded data
         return data; // Return the parsed object
       } catch (err) {
         console.error("Error decoding Base64 JSON data:", err);
@@ -95,29 +166,29 @@ export default {
     };
 
     // Fetch Quizzes Based on Decoded Data and Pick 1 Randomly
-  const fetchQuizByType = async (type) => {
-    console.log("Fetching quizzes for type:", type);
-    try {
-      const { data, error } = await supabase
-        .from("quiz")
-        .select("*")
-        .eq("type", type); // Filter quizzes by the type
+    const fetchQuizByType = async (type) => {
+      console.log("Fetching quizzes for type:", type);
+      try {
+        const { data, error } = await supabase
+          .from("quiz")
+          .select("*")
+          .eq("type", type); // Filter quizzes by the type
 
-      if (error) {
-        console.error("Error fetching quizzes:", error);
-      } else if (data && data.length > 0) {
-        // Randomly pick one quiz from the fetched data
-        const randomQuiz = data[Math.floor(Math.random() * data.length)];
-        console.log("Randomly picked quiz:", randomQuiz);
+        if (error) {
+          console.error("Error fetching quizzes:", error);
+        } else if (data && data.length > 0) {
+          // Randomly pick one quiz from the fetched data
+          const randomQuiz = data[Math.floor(Math.random() * data.length)];
+          console.log("Randomly picked quiz:", randomQuiz);
 
-        quizzes.value = [randomQuiz]; // Set the random quiz in the reactive state
-      } else {
-        console.warn("No quizzes found for the given type.");
+          quizzes.value = [randomQuiz]; // Set the random quiz in the reactive state
+        } else {
+          console.warn("No quizzes found for the given type.");
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching quizzes:", err);
       }
-    } catch (err) {
-      console.error("Unexpected error fetching quizzes:", err);
-    }
-  };
+    };
 
     // Submit Answer
     const submitAnswer = (quizId, answer) => {
@@ -125,11 +196,41 @@ export default {
       console.log("Selected answer:", answer);
       isAnswering.value = true;
 
-      // Simulate answer submission (replace with actual logic)
+      // Check if the user has already answered this quiz
+      if (answeredQuizIds.value.includes(quizId)) {
+        alert("You have already answered this quiz!");
+        return;
+      }
+
+      const quiz = quizzes.value.find((q) => q.id === quizId);
+
+      // Check if the answer is correct
+      if (quiz.answer && quiz.answer.includes(answer)) {
+        console.log("Correct answer!");
+        isCorrect.value = true;
+        reward.value = "100 points"; // Example reward
+      } else {
+        console.log("Wrong answer!");
+        isCorrect.value = false;
+        reward.value = ""; // No reward
+      }
+
+      // Save answered quiz ID to prevent retrying
+      answeredQuizIds.value.push(quizId);
+      localStorage.setItem("answeredQuizzes", JSON.stringify(answeredQuizIds.value));
+
+      // Show the popup
+      showPopup.value = true;
+
+      // Simulate delay for submission
       setTimeout(() => {
-        console.log("Answer submitted!");
         isAnswering.value = false;
       }, 1000);
+    };
+
+    // Close Popup
+    const closePopup = () => {
+      showPopup.value = false;
     };
 
     // Start Quiz
@@ -161,6 +262,10 @@ export default {
       bibleBooks,
       startQuiz,
       submitAnswer,
+      closePopup,
+      showPopup,
+      isCorrect,
+      reward,
     };
   },
 };
@@ -199,5 +304,54 @@ export default {
 
 .submit-button:hover {
   background-color: var(--main-color);
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.popup {
+  background-color: var(--white);
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+  animation: popin 0.5s ease-out;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close-button {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.close-button:hover {
+  background-color: var(--main-color);
+}
+
+@keyframes popin {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>
