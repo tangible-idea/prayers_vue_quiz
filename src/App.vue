@@ -42,28 +42,30 @@ export default {
     const isAnswering = ref(false);
     const quizStarted = ref(false);
 
-    // Helper: Decode Base64 string to IDs
-    const decodeBase64Ids = (base64String) => {
+    // Helper: Decode Base64 string to retrieve quiz data (JSON format)
+    const decodeBase64Data = (base64String) => {
       console.log('Decoding Base64 string:', base64String);
       try {
         const decodedString = atob(base64String); // Decode Base64 string
         console.log('Decoded string:', decodedString);
-        const ids = JSON.parse(decodedString); // Parse JSON string to array
-        console.log('Decoded IDs:', ids);
-        return ids;
+
+        // Parse JSON string into an object
+        const data = JSON.parse(decodedString);
+        console.log('Decoded Data (JSON):', data);
+        return data; // Return the parsed object
       } catch (err) {
-        console.error('Error decoding Base64 IDs:', err);
+        console.error('Error decoding Base64 JSON data:', err);
         return null;
       }
     };
 
     // Fetch Quizzes Based on Decoded IDs
-    const fetchQuizzes = async (ids) => {
-      console.log('Fetching quizzes for IDs:', ids);
+    const fetchQuizById = async (id) => {
+      console.log('Fetching quizzes for ID:', id);
       try {
         let query = supabase.from('quiz').select('*'); // Use the correct table name
-        if (ids) {
-          query = query.in('id', ids); // Apply filter for IDs
+        if (id) {
+          query = query.eq('id', id); // Query specific quiz by ID
         }
         const { data, error } = await query;
 
@@ -77,6 +79,27 @@ export default {
       } catch (err) {
         console.error('Unexpected error fetching quizzes:', err);
       }
+    };  
+
+    // Fetch a Random Quiz Based on type
+    const fetchQuizByType = async (type) => {
+      console.log('Fetching a random quiz for type:', type);
+      try {
+        const { data, error } = await supabase
+          .from('quiz')
+          .select('*')
+          .eq('type', type);
+
+        if (error) {
+          console.error('Error fetching quizzes:', error);
+        } else {
+          const randomQuiz = data[Math.floor(Math.random() * data.length)];
+          console.log('Fetched a random quiz:', randomQuiz);
+          quizzes.value = [randomQuiz]; // Populate quizzes with the single fetched quiz
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching a random quiz:', err);
+      }
     };
 
     // Start Quiz
@@ -84,20 +107,25 @@ export default {
       console.log('Starting quiz...');
       quizStarted.value = true; // Set quizStarted to true
 
-      // Get Base64-encoded IDs from the URL
-      const params = new URLSearchParams(window.location.search);
-      const encodedIds = params.get('ids'); // Get the "ids" query parameter
-      console.log('Encoded IDs from URL:', encodedIds);
+      // Extract Base64-encoded data from the URL (path or query string)
+      const base64String = window.location.pathname.split('/').pop(); // Extract the last part of the URL
+      console.log('Base64 String from URL:', base64String);
 
-      if (encodedIds) {
-        const ids = decodeBase64Ids(encodedIds); // Decode Base64 string to get IDs
-        if (ids) {
-          await fetchQuizzes(ids); // Fetch quizzes based on the decoded IDs
+      if (base64String) {
+        const decodedData = decodeBase64Data(base64String); // Decode Base64 string
+        if(decodedData) {
+          console.log('Decoded Data2:', decodedData);
+          if(decodedData.id) {
+              await fetchQuizById(decodedData.id); // Fetch quizzes based on the decoded ID
+          }else if(decodedData.type) {
+              console.log('Fetching quizzes for type:', decodedData.type);
+              await fetchQuizByType(decodedData.type); // Fetch quizzes based on the decoded type
+          }
         } else {
-          console.error('No valid IDs found after decoding.');
+          console.error('Invalid or missing ID in decoded data.');
         }
       } else {
-        console.warn('No IDs provided in the URL.');
+        console.warn('No Base64 string provided in the URL.');
       }
     };
 
