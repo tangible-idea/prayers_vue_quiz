@@ -195,21 +195,29 @@ export default {
     const decodeBase64Data = (base64String) => {
       console.log("Decoding Base64 string:", base64String);
       try {
-        const decodedString = atob(base64String); // Decode Base64 string
-        console.log("Decoded string:", decodedString);
 
-        // Parse JSON string into an object
-        const data = JSON.parse(decodedString);
-        console.log("Decoded Data (JSON):", data);
+        // Step 1: Decode the Base64 string
+        const decodedString = atob(base64String);
+        console.log("Decoded String:", decodedString);
 
+        // Step 2: Parse the JSON string into an object
+        const data1 = JSON.parse(decodedString);
+        console.log("Parsed Object1:", data1);
+        
+        const data2 = JSON.parse(data1);
+        console.log("Parsed Object2:", data2);
+
+        // Step 3: Print keys
+        Object.keys(data2).forEach(key => console.log(key));
+        
         // Check for 'room_tag'
-        if (!data.room_tag) {
+        if (!data2.room_tag) {
           throw new Error("Missing 'room_tag' parameter.");
         } else {
-          localStorage.setItem("room_tag", data.room_tag);
+          localStorage.setItem("room_tag", data2.room_tag);
         }
 
-        return data; // Return the parsed object
+        return data2; // Return the parsed object
       } catch (err) {
         console.error("Error decoding Base64 JSON data:", err);
         // Set error message and show error popup
