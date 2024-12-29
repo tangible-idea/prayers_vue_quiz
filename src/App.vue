@@ -59,7 +59,7 @@
               @click="selectUser(user)" 
               class="user-button"
             >
-              <img :src="user.image" alt="User Image" class="user-image" />
+              <img :src="user.image || placeholderImage" alt="User Image" class="user-image" />
               <span>{{ user.sender }}</span>
             </button>
           </div>
@@ -83,6 +83,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { ref } from "vue";
 
+// Placeholder image (Base64 Encoded)
+// You can replace this with any valid Base64 image string or an external URL
+const PLACEHOLDER_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIA...'; // Truncated for brevity
+
 // Supabase Client Initialization
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
@@ -102,6 +106,9 @@ export default {
     // State for Error Popup
     const showErrorPopup = ref(false);
     const errorMessage = ref("");
+
+    // Placeholder Image
+    const placeholderImage = PLACEHOLDER_IMAGE;
 
     // Bible books in Korean
     const bibleBooks = ref([
@@ -275,19 +282,29 @@ export default {
           let base64Image = '';
           if (user.image) {
             try {
-              // Assuming user.image is an ArrayBuffer or similar binary data
+              // **Assumption**: user.image is a URL.
+              // If it's binary data, you need to adjust accordingly.
+              // For URL:
+              base64Image = user.image; // Use the URL directly
+              
+              /*
+              // **If user.image is binary data**, uncomment the following:
               const base64 = arrayBufferToBase64(user.image);
               // Adjust MIME type as per your image format (e.g., image/png)
               base64Image = `data:image/jpeg;base64,${base64}`;
+              */
             } catch (err) {
-              console.error("Error converting image to Base64:", err);
-              // Optionally set a placeholder image in case of conversion failure
-              base64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'; // Replace with actual placeholder image
+              console.error("Error processing image:", err);
+              // Set placeholder image in case of an error
+              base64Image = placeholderImage;
             }
+          } else {
+            // If no image is provided, use the placeholder
+            base64Image = placeholderImage;
           }
           return {
             ...user,
-            image: base64Image,
+            image: `data:image/png;base64, ${base64Image}`,
           };
         });
 
@@ -346,10 +363,16 @@ export default {
       console.log("Selected User:", user);
       // TODO: Implement the logic to assign the reward or perform desired actions
       // For example:
-      // assignRewardToUser(user);
-      // Then close the popup or show a confirmation
+      // assignRewardToUser(user).then(() => {
+      //   alert(`선물을 ${user.sender}님께 전달하였습니다!`);
+      //   closePopup();
+      // }).catch(error => {
+      //   console.error("Error assigning reward:", error);
+      //   errorMessage.value = "리워드 할당에 실패했습니다. 나중에 다시 시도해주세요.";
+      //   showErrorPopup.value = true;
+      // });
 
-      // Example action: Close the popup and show a confirmation
+      // Temporary Confirmation
       alert(`선물을 ${user.sender}님께 전달하였습니다!`);
       closePopup();
     };
@@ -401,6 +424,7 @@ export default {
       showErrorPopup,
       errorMessage,
       selectUser, // Ensure this method is exposed
+      placeholderImage // Expose if needed
     };
   },
 };
@@ -413,7 +437,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: #f0f2f5; /* Slightly lighter background for better contrast */
-  color: #333;
+  color: #333; /* Dark text for better readability */
 }
 
 h3 {
@@ -515,19 +539,19 @@ button {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 500px;
-  max-height: 80vh; /* Limit popup height to 80% of viewport height */
+  max-height: 90vh; /* Limit popup height to 90% of viewport height */
   overflow-y: auto; /* Enable vertical scroll if content exceeds max height */
 }
 
 .popup h3 {
   font-size: 1.8rem;
   margin-bottom: 15px;
-  color: #333;
+  color: #333; /* Dark text for better readability */
 }
 
 .popup p {
   font-size: 1rem;
-  color: #666;
+  color: #666; /* Slightly lighter text for informational messages */
   margin-bottom: 20px;
 }
 
@@ -631,6 +655,10 @@ button {
   height: 40px;
   border-radius: 50%;
   margin-right: 15px; /* Increased margin for better spacing */
+}
+
+.user-button span {
+  color: #333;
 }
 
 /* Ensure images are responsive */
