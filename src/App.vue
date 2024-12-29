@@ -76,7 +76,7 @@ export default {
     const showPopup = ref(false); // Controls the popup visibility
     const isCorrect = ref(false); // Tracks if the user's answer is correct
     const reward = ref(""); // Stores the reward message
-    const answeredQuizIds = ref(JSON.parse(localStorage.getItem("answeredQuizzes")) || []); // Track answered quizzes
+    //const answeredQuizIds = ref(JSON.parse(localStorage.getItem("answeredQuizzes")) || []); // Track answered quizzes
 
     // Bible books in Korean
     const bibleBooks = ref([
@@ -197,10 +197,10 @@ export default {
       isAnswering.value = true;
 
       // Check if the user has already answered this quiz
-      if (answeredQuizIds.value.includes(quizId)) {
-        alert("You have already answered this quiz!");
-        return;
-      }
+      // if (answeredQuizIds.value.includes(quizId)) {
+      //   alert("You have already answered this quiz!");
+      //   return;
+      // }
 
       const quiz = quizzes.value.find((q) => q.id === quizId);
 
@@ -216,8 +216,8 @@ export default {
       }
 
       // Save answered quiz ID to prevent retrying
-      answeredQuizIds.value.push(quizId);
-      localStorage.setItem("answeredQuizzes", JSON.stringify(answeredQuizIds.value));
+      //answeredQuizIds.value.push(quizId);
+      //localStorage.setItem("answeredQuizzes", JSON.stringify(answeredQuizIds.value));
 
       // Show the popup
       showPopup.value = true;
@@ -270,88 +270,210 @@ export default {
   },
 };
 </script>
-
 <style>
-/* Add style for the combobox */
+/* General Styles */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #555;
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Combobox Section */
 .combo-section {
-  background-color: var(--white);
+  background-color: #ffffff;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin: 20px;
+  text-align: center;
 }
-
+/* Updated Combobox Styles */
 .bible-combobox {
-  width: 50%;
-  padding: 10px;
-  margin: 10px 0;
+  width: 60%;
+  padding: 12px 15px;
+  margin: 15px 0;
   font-size: 16px;
   border: 1px solid #ccc;
   border-radius: 5px;
+  outline: none;
+  background-color: #ffffff; /* Light background for better readability */
+  color: #333; /* Dark text for good contrast */
+  transition: border-color 0.3s ease;
 }
 
-.submit-button {
-  background-color: var(--secondary-color);
-  color: var(--white);
+.bible-combobox:focus {
+  border-color: #007bff; /* Highlight border on focus */
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Subtle focus glow */
+}
+
+.bible-combobox option {
+  color: #333; /* Ensure options are readable as well */
+  background-color: #ffffff; /* Keep the background consistent */
+}
+
+/* Buttons */
+.submit-button,
+.option-button,
+.start-button,
+.close-button {
+  background-color: #007bff;
+  color: #ffffff;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 20px;
   margin: 10px;
   border-radius: 5px;
-  cursor: pointer;
   font-size: 16px;
-  transition: background-color 0.3s;
+  font-weight: bold;
 }
 
-.submit-button:hover {
-  background-color: var(--main-color);
+.submit-button:hover,
+.option-button:hover,
+.start-button:hover,
+.close-button:hover {
+  background-color: #0056b3;
 }
 
+.submit-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Overlay (Popup Background) */
 .overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10;
 }
 
+/* Popup Styles */
 .popup {
-  background-color: var(--white);
+  background-color: #ffffff;
   padding: 30px;
-  border-radius: 10px;
+  border-radius: 15px;
   text-align: center;
-  animation: popin 0.5s ease-out;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: scaleUp 0.4s ease-out;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+}
+
+.popup h3 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.popup p {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 20px;
 }
 
 .close-button {
-  background-color: var(--secondary-color);
-  color: var(--white);
+  background-color: #007bff;
+  color: #ffffff;
+  padding: 10px 25px;
   border: none;
-  padding: 10px 20px;
-  margin: 10px;
   border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
 }
 
 .close-button:hover {
-  background-color: var(--main-color);
+  background-color: #0056b3;
 }
 
-@keyframes popin {
+/* Animations */
+@keyframes scaleUp {
   from {
-    transform: scale(0.5);
+    transform: scale(0.8);
     opacity: 0;
   }
   to {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* Start Screen */
+.start-screen {
+  text-align: center;
+  padding: 50px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 20px auto;
+  max-width: 600px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.start-button {
+  background-color: #28a745;
+  color: #ffffff;
+  border: none;
+  padding: 15px 25px;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  transition: background-color 0.3s ease;
+}
+
+.start-button:hover {
+  background-color: #218838;
+}
+
+/* Question Section */
+.question-section {
+  padding: 20px;
+  margin: 10px auto;
+  max-width: 700px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.question {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #444;
+}
+
+.option-button {
+  background-color: #007bff;
+  color: #ffffff;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  margin: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.option-button:hover {
+  background-color: #0056b3;
+}
+
+.option-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 </style>
