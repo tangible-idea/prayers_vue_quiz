@@ -44,13 +44,31 @@
       </div>
     </div>
 
-    <!-- Popup Section -->
+    <!-- Quiz Result Popup -->
     <div v-if="showPopup" class="overlay">
       <div class="popup">
         <h3 v-if="isCorrect">🎉 Congratulations! You answered correctly! 🎉</h3>
         <h3 v-else>❌ Wrong answer. Better luck next time! ❌</h3>
-        <p v-if="isCorrect">Your reward: {{ reward }}</p>
+        <!-- Display Reward or Users based on correctness -->
+        <div v-if="isCorrect">
+          <p>Here are the users:</p>
+          <ul>
+            <li v-for="user in users" :key="user.sender_key">
+              <img :src="user.image" alt="User Image" class="user-image" />
+              <strong>{{ user.sender }}</strong> - {{ user.room_tag }}
+            </li>
+          </ul>
+        </div>
         <button @click="closePopup" class="close-button">Close</button>
+      </div>
+    </div>
+
+    <!-- Error Popup -->
+    <div v-if="showErrorPopup" class="overlay">
+      <div class="popup">
+        <h3>⚠️ Error ⚠️</h3>
+        <p>{{ errorMessage }}</p>
+        <button @click="closeErrorPopup" class="close-button">Close</button>
       </div>
     </div>
   </div>
@@ -72,11 +90,13 @@ export default {
     const isAnswering = ref(false);
     const quizStarted = ref(false);
     const selectedAnswer = ref(""); // Stores the selected answer for bible_verse quizzes
-    const decodedData = ref({}); // Decoded data from Base64
-    const showPopup = ref(false); // Controls the popup visibility
+    const showPopup = ref(false); // Controls the quiz result popup visibility
     const isCorrect = ref(false); // Tracks if the user's answer is correct
-    const reward = ref(""); // Stores the reward message
-    //const answeredQuizIds = ref(JSON.parse(localStorage.getItem("answeredQuizzes")) || []); // Track answered quizzes
+    const users = ref([]); // Stores fetched users
+
+    // State for Error Popup
+    const showErrorPopup = ref(false);
+    const errorMessage = ref("");
 
     // Bible books in Korean
     const bibleBooks = ref([
@@ -158,9 +178,20 @@ export default {
         // Parse JSON string into an object
         const data = JSON.parse(decodedString);
         console.log("Decoded Data (JSON):", data);
+
+        // Check for 'room_tag'
+        if (!data.room_tag) {
+          throw new Error("Missing 'room_tag' parameter.");
+        }else{
+          localStorage.setItem("room_tag", data.room_tag);
+        }
+
         return data; // Return the parsed object
       } catch (err) {
         console.error("Error decoding Base64 JSON data:", err);
+        // Set error message and show error popup
+        errorMessage.value = err.message;
+        showErrorPopup.value = true;
         return null;
       }
     };
@@ -176,6 +207,9 @@ export default {
 
         if (error) {
           console.error("Error fetching quizzes:", error);
+          // Handle fetch error by showing error popup
+          errorMessage.value = "Failed to fetch quizzes. Please try again later.";
+          showErrorPopup.value = true;
         } else if (data && data.length > 0) {
           // Randomly pick one quiz from the fetched data
           const randomQuiz = data[Math.floor(Math.random() * data.length)];
@@ -184,23 +218,53 @@ export default {
           quizzes.value = [randomQuiz]; // Set the random quiz in the reactive state
         } else {
           console.warn("No quizzes found for the given type.");
+          // Handle no quizzes found by showing error popup
+          errorMessage.value = "No quizzes available for the provided type.";
+          showErrorPopup.value = true;
         }
       } catch (err) {
         console.error("Unexpected error fetching quizzes:", err);
+        // Handle unexpected errors
+        errorMessage.value = "An unexpected error occurred. Please try again later.";
+        showErrorPopup.value = true;
+      }
+    };
+
+    // Const Arrow Function to Fetch Users from 'kakao_profile' Table
+    const getUsers = async () => {
+      console.log("Fetching users from 'kakao_profile' table...");
+      try {
+        const roomTag= localStorage.getItem("room_tag"); // get room_tag from Localstorage.
+
+        const { data, error } = await supabase
+          .from("kakao_profile")
+          .select("room_tag, sender_key, image, sender")
+          .eq('room_tag', roomTag);
+
+        if (error) {
+          console.error("Error fetching users:", error);
+          // Handle fetch error by showing error popup
+          errorMessage.value = "Failed to fetch users. Please try again later.";
+          showErrorPopup.value = true;
+          return [];
+        }
+
+        console.log("Fetched Users:", data);
+        return data;
+      } catch (err) {
+        console.error("Unexpected error fetching users:", err);
+        // Handle unexpected errors
+        errorMessage.value = "An unexpected error occurred while fetching users.";
+        showErrorPopup.value = true;
+        return [];
       }
     };
 
     // Submit Answer
-    const submitAnswer = (quizId, answer) => {
+    const submitAnswer = async (quizId, answer) => {
       console.log("Submitting answer for quiz ID:", quizId);
       console.log("Selected answer:", answer);
       isAnswering.value = true;
-
-      // Check if the user has already answered this quiz
-      // if (answeredQuizIds.value.includes(quizId)) {
-      //   alert("You have already answered this quiz!");
-      //   return;
-      // }
 
       const quiz = quizzes.value.find((q) => q.id === quizId);
 
@@ -208,16 +272,14 @@ export default {
       if (quiz.answer && quiz.answer.includes(answer)) {
         console.log("Correct answer!");
         isCorrect.value = true;
-        reward.value = "100 points"; // Example reward
+        // Instead of awarding points, fetch users
+        const fetchedUsers = await getUsers();
+        users.value = fetchedUsers;
       } else {
         console.log("Wrong answer!");
         isCorrect.value = false;
-        reward.value = ""; // No reward
+        // Optionally, you can handle rewards or other logic for incorrect answers
       }
-
-      // Save answered quiz ID to prevent retrying
-      //answeredQuizIds.value.push(quizId);
-      //localStorage.setItem("answeredQuizzes", JSON.stringify(answeredQuizIds.value));
 
       // Show the popup
       showPopup.value = true;
@@ -228,9 +290,14 @@ export default {
       }, 1000);
     };
 
-    // Close Popup
+    // Close Quiz Result Popup
     const closePopup = () => {
       showPopup.value = false;
+    };
+
+    // Close Error Popup
+    const closeErrorPopup = () => {
+      showErrorPopup.value = false;
     };
 
     // Start Quiz
@@ -246,11 +313,21 @@ export default {
         const decoded = decodeBase64Data(base64String); // Decode Base64 string
         if (decoded && decoded.type) {
           await fetchQuizByType(decoded.type); // Fetch quizzes based on the decoded type
+        } else if (decoded === null) {
+          // decodeBase64Data handles error popups, so just stop here
+          quizStarted.value = false; // Revert quizStarted if decoding failed
         } else {
           console.error("Invalid Base64 string or missing type.");
+          // Handle invalid type
+          errorMessage.value = "Invalid quiz type provided.";
+          showErrorPopup.value = true;
+          quizStarted.value = false; // Revert quizStarted
         }
       } else {
         console.warn("No Base64 string provided in the URL.");
+        // Handle missing Base64 string
+        errorMessage.value = "No quiz data provided.";
+        showErrorPopup.value = true;
       }
     };
 
@@ -263,13 +340,17 @@ export default {
       startQuiz,
       submitAnswer,
       closePopup,
+      closeErrorPopup,
       showPopup,
       isCorrect,
-      reward,
+      users,
+      showErrorPopup,
+      errorMessage,
     };
   },
 };
 </script>
+
 <style>
 /* General Styles */
 body {
@@ -300,6 +381,7 @@ button {
   margin: 20px;
   text-align: center;
 }
+
 /* Updated Combobox Styles */
 .bible-combobox {
   width: 60%;
@@ -374,7 +456,7 @@ button {
   animation: scaleUp 0.4s ease-out;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   width: 90%;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .popup h3 {
@@ -475,5 +557,23 @@ button {
 .option-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+/* User List Styles */
+.user-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+/* Error Popup Specific Styles */
+.popup h3:nth-of-type(1) {
+  color: #e74c3c; /* Red color for error */
+}
+
+.popup p {
+  color: #333; /* Darker text for better readability */
 }
 </style>
