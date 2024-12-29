@@ -383,6 +383,9 @@ export default {
       // Temporary Confirmation
       alert(`선물을 ${user.sender}님께 전달하였습니다!`);
       closePopup();
+      
+      // Attempt to close the current window
+      window.close();
     };
 
     // Start Quiz
