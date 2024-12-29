@@ -261,6 +261,8 @@ export default {
       }
     };
 
+
+
     // Const Arrow Function to Fetch Users from 'kakao_profile' Table
     const getUsers = async () => {
       console.log("Fetching users from 'kakao_profile' table...");
@@ -366,19 +368,94 @@ export default {
       showErrorPopup.value = false;
     };
 
+    function getRandomFruit() {
+      // Expanded list of fruit emojis
+      const fruits = [
+        "🍎", // Red apple
+        "🍏", // Green apple
+        "🍌", // Banana
+        "🍒", // Cherry
+        "🍇", // Grapes
+        "🍋", // Lemon
+        "🍓", // Strawberry
+        "🍍", // Pineapple
+        "🍑", // Peach
+        "🍉", // Watermelon
+        "🥭", // Mango
+        "🥥", // Coconut
+        "🍈", // Melon
+        "🍊", // Orange
+        "🍐", // Pear
+        "🍎", // Red apple (duplicate allowed)
+        "🥝", // Kiwi
+        "🍅", // Tomato (can be classified as a fruit)
+        "🌽", // Corn (added as a crop)
+        "🥑"  // Avocado
+      ];
+
+      // Return a random fruit from the list
+      return fruits[Math.floor(Math.random() * fruits.length)];
+    }
+
+
+    /**
+     * Sends a reward to the specified user using the API.
+     *
+     * @param {string} reward - The reward to be sent.
+     * @param {string} toWho - The recipient of the reward.
+     * @param {string} roomTag - The tag identifying the room.
+     * @param {string} successMessage - The success message.
+     * @returns {Promise<void>} - Resolves on success or logs an error.
+     */
+     const sendReward = async (reward, toWho, roomTag, successMessage) => {
+      const url = "https://api.tangibly.link/quiz/reward";
+
+      // Prepare parameters for the POST request
+      const payload = {
+        reward: reward,
+        to_who: toWho,
+        room_tag: roomTag,
+        success_message: successMessage,
+      };
+
+      try {
+        // Send POST request to the API
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        // Check if the request was successful
+        if (!response.ok) {
+          const errorMessage = await response.text();
+          throw new Error(
+            `Failed to send reward: ${response.status} ${response.statusText} - ${errorMessage}`
+          );
+        }
+
+        // Parse and log the JSON response
+        const data = await response.json();
+        console.log("Reward sent successfully:", data);
+      } catch (error) {
+        console.error("Error sending reward:", error.message);
+      }
+    };
+
     // Handle selecting a user
     const selectUser = (user) => {
       console.log("Selected User:", user);
-      // TODO: Implement the logic to assign the reward or perform desired actions
-      // For example:
-      // assignRewardToUser(user).then(() => {
-      //   alert(`선물을 ${user.sender}님께 전달하였습니다!`);
-      //   closePopup();
-      // }).catch(error => {
-      //   console.error("Error assigning reward:", error);
-      //   errorMessage.value = "리워드 할당에 실패했습니다. 나중에 다시 시도해주세요.";
-      //   showErrorPopup.value = true;
-      // });
+
+      const roomTag = localStorage.getItem("room_tag"); // get room_tag from LocalStorage.
+      const randomReward = getRandomFruit();
+      sendReward(
+        randomReward,
+        user.sender_key,
+        roomTag,
+        `목장에서 누군가가 퀴즈를 맞췄어요!\n${user.sender}님에게 선물을 보냈어요!\n${user.sender}님 +${randomReward}`
+      );
 
       // Temporary Confirmation
       alert(`선물을 ${user.sender}님께 전달하였습니다!`);
