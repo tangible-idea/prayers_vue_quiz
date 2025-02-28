@@ -111,7 +111,7 @@ with tab1:
         execute_deletion_clicked = st.button("퀴즈 DB에서 삭제하기")
 
     if button2_clicked:
-        result = supabase.table('quiz').select('id,question,options,answer,reference,type,difficulty').execute()
+        result = supabase.table('quiz_painting').select('id,question,options,answer,reference,type,difficulty').execute()
         st.dataframe(result.data, selection_mode="single-row")
 
     if execute_deletion_clicked:
@@ -126,7 +126,7 @@ with tab1:
 
     if button3_redundant_clicked:
         with st.spinner("중복 퀴즈를 검색중입니다..."):
-            result = supabase.table('quiz').select('id,question,options').execute()
+            result = supabase.table('quiz_painting').select('id,question,options').execute()
             query_to_llm = str(result) + '\n\n 여기에서 유사한 제목의 퀴즈를 찾고, id를 set로 출력해줘. 예시: 중복의심제목: [13,194,222...], 중복의심제목: [3,4...]'
             print(f"query_to_llm : {query_to_llm}")
 
