@@ -152,7 +152,7 @@ with tab2:
         progress_text.text("퀴즈를 생성중입니다...")
         progress_bar.progress(50)
 
-        run(gen_paintings(book_name, painting_name, int(count), progress_text, progress_bar))
+        run(gen_paintings(painting_name, int(count), progress_text, progress_bar))
 
         progress_text.text("완료!")
         progress_bar.empty()
