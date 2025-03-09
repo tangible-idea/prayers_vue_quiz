@@ -96,7 +96,7 @@ st.set_page_config(
     }
 )
 
-st.header("AI 명화퀴즈 생성기.")
+st.header("AI 명화퀴즈 생성 - 관리자 페이지")
 
 tab1, tab2, tab3, tab4 = st.tabs(["1.DB 관리", "2.퀴즈 생성", "3.이미지 업로드", "4.만든 퀴즈 풀어보기"])
 
@@ -109,6 +109,7 @@ with tab1:
 
         target_deletion= st.text_input("삭제할 DB id array:", placeholder="[12,36].. 와 같이 적어주세요")
         execute_deletion_clicked = st.button("퀴즈 DB에서 삭제하기")
+        execute_delete_all_clicked = st.button("퀴즈 DB에서 삭제하기")
 
     if button2_clicked:
         result = supabase.table('quiz_painting').select('id,question,options,answer,reference,type,difficulty').execute()
