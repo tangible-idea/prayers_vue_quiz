@@ -85,7 +85,7 @@ async def gen_bq(book_name="창세기", how_many=10, progress_text=None, progres
 
 
 st.set_page_config(
-    page_title="BQ Gen",
+    page_title="AI연동 퀴즈DB 관리 프로그램",
     page_icon="🧊",
     layout="wide",
     initial_sidebar_state="expanded",
