@@ -109,7 +109,7 @@ with tab1:
 
         target_deletion= st.text_input("삭제할 DB id array:", placeholder="[12,36].. 와 같이 적어주세요")
         execute_deletion_clicked = st.button("퀴즈 DB에서 삭제하기")
-        execute_delete_all_clicked = st.button("퀴즈 DB에서 삭제하기")
+        #execute_delete_all_clicked = st.button("퀴즈 DB에서 삭제하기")
 
     if button2_clicked:
         result = supabase.table('quiz_painting').select('id,question,options,answer,reference,type,difficulty').execute()
