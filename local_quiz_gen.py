@@ -96,7 +96,7 @@ st.set_page_config(
     }
 )
 
-st.header("BQ gen")
+st.header("AI 명화퀴즈 생성기.")
 
 tab1, tab2, tab3, tab4 = st.tabs(["1.DB 관리", "2.퀴즈 생성", "3.이미지 업로드", "4.만든 퀴즈 풀어보기"])
 
