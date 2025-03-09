@@ -12,7 +12,7 @@ import streamlit as st
 
 # gen quiz related to paintings Bible books
 async def gen_paintings(painting_name="unknown", how_many=10, progress_text=None, progress_bar=None):
-    header_query= f"Generate {how_many} of quiz questions for a painting. The name of the painting is {painting_name}"
+    header_query= f"Generate {how_many} of quiz questions for a painting. The name of the painting is {painting_name}, Write everything in Korean."
     query_to_llm = header_query + 'Include question, options, answer, and reference(what year the painting related of). Provide a certain format in JSON : "{ "data": [{ "question":"", "difficulty": (number 1-10), options: [...], answer: "", reference: "", type: "painting"]} Do not put any other message besides the JSON format. (even without ```json or ```)'
     print(f"query_to_llm : {query_to_llm}")
 
