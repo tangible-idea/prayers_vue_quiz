@@ -159,30 +159,20 @@ with tab2:
         progress_bar.empty()
 
 with tab3:
-    bible_chapters = {
-        "창세기": "Genesis", "출애굽기": "Exodus", "레위기": "Leviticus", "민수기": "Numbers", "신명기": "Deuteronomy",
-        "여호수아": "Joshua", "사사기": "Judges", "룻기": "Ruth", "사무엘상": "1_Samuel", "사무엘하": "2_Samuel",
-        "열왕기상": "1_Kings", "열왕기하": "2_Kings", "역대상": "1_Chronicles", "역대하": "2_Chronicles", "에스라": "Ezra",
-        "느헤미야": "Nehemiah", "에스더": "Esther", "욥기": "Job", "시편": "Psalms", "잠언": "Proverbs",
-        "전도서": "Ecclesiastes", "아가": "Song_of_Solomon", "이사야": "Isaiah", "예레미야": "Jeremiah", "예레미야애가": "Lamentations",
-        "에스겔": "Ezekiel", "다니엘": "Daniel", "호세아": "Hosea", "요엘": "Joel", "아모스": "Amos",
-        "오바댜": "Obadiah", "요나": "Jonah", "미가": "Micah", "나훔": "Nahum", "하박국": "Habakkuk",
-        "스바냐": "Zephaniah", "학개": "Haggai", "스가랴": "Zechariah", "말라기": "Malachi",
-        "마태복음": "Matthew", "마가복음": "Mark", "누가복음": "Luke", "요한복음": "John",
-        "사도행전": "Acts", "로마서": "Romans", "고린도전서": "1_Corinthians", "고린도후서": "2_Corinthians",
-        "갈라디아서": "Galatians", "에베소서": "Ephesians", "빌립보서": "Philippians", "골로새서": "Colossians",
-        "데살로니가전서": "1_Thessalonians", "데살로니가후서": "2_Thessalonians", "디모데전서": "1_Timothy", "디모데후서": "2_Timothy",
-        "디도서": "Titus", "빌레몬서": "Philemon", "히브리서": "Hebrews", "야고보서": "James",
-        "베드로전서": "1_Peter", "베드로후서": "2_Peter", "요한일서": "1_John", "요한이서": "2_John",
-        "요한삼서": "3_John", "유다서": "Jude", "요한계시록": "Revelation"
+    characters = {
+        "클로드 모네": "Claude_Monet", 
+        "폴 고갱": "Paul_Gauguin", 
+        "빈센트 반 고흐": "Vincent_van_Gogh", 
+        "카라바조": "Caravaggio", 
+        "파블로 피카소": "Pablo_Picasso"
     }
     
     col1, col2 = st.columns(2)
     with col1:
-        selected_korean_chapter = st.selectbox("성경 책을 선택하세요", list(bible_chapters.keys()))
-        selected_english_chapter = bible_chapters[selected_korean_chapter]
+        selected_korean_character = st.selectbox("작가를 선택하세요", list(characters.keys()))
+        selected_english_character = characters[selected_korean_character]
     with col2:
-        chapter_number = st.number_input("장 번호", min_value=1, value=1, step=1)
+        painting_number = st.number_input("작품 번호", min_value=1, value=1, step=1)
     
     uploaded_file = st.file_uploader("이미지 파일을 선택하세요", type=['jpg'])
     if uploaded_file is not None:
@@ -203,9 +193,9 @@ with tab3:
             # Display the resized image
             st.image(image, caption="업로드된 이미지 (압축됨)")
             
-            # Create filename with English chapter name and verse
+            # Create filename with English artist name and painting number
             file_extension = uploaded_file.name.split('.')[-1].lower()
-            filename = f"{selected_english_chapter}_{chapter_number}.{file_extension}"
+            filename = f"{selected_english_character}_{painting_number}.{file_extension}"
             
             try:
                 # Upload to Supabase storage with overwrite
