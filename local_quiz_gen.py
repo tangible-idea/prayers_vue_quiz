@@ -217,7 +217,10 @@ with tab3:
                 st.error(f"업로드 중 오류가 발생했습니다: {str(e)}")
 
 with tab4:
-    book_name = st.text_input("풀어볼 내용", placeholder="예: Genesis 2, Exodus 17")
+    # Use the same characters dictionary from tab3
+    selected_korean_character = st.selectbox("작가를 선택하세요", list(characters.keys()), key="quiz_character")
+    selected_english_character = characters[selected_korean_character]
+    painting_number = st.number_input("작품 번호", min_value=1, value=1, step=1, key="quiz_painting_number")
     button4_clicked = st.button("퀴즈 풀기")
     if button4_clicked:
         st.text("준비중...")
