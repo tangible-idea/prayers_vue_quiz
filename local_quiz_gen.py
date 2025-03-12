@@ -8,14 +8,7 @@ import io
 
 import streamlit as st
 
-
-
-# gen quiz related to paintings Bible books
-async def gen_paintings(painting_name="unknown", how_many=10, progress_text=None, progress_bar=None):
-    header_query= f"Generate {how_many} of quiz questions for a painting. The name of the painting is {painting_name}, Write everything in Korean."
-    query_to_llm = header_query + 'Include question, options, answer, and reference(what year the painting related of). Provide a certain format in JSON : "{ "data": [{ "question":"", "difficulty": (number 1-10), options: [...], answer: "", reference: "", type: "painting"]} Do not put any other message besides the JSON format. (even without ```json or ```)'
-    print(f"query_to_llm : {query_to_llm}")
-
+async def gpt4o_json(query_to_llm):
     response = await gpt4o(query_to_llm)
     from_llm = response.get("message", "Error")
     print("=====")
@@ -28,6 +21,15 @@ async def gen_paintings(painting_name="unknown", how_many=10, progress_text=None
     print("=====")
     print(json_data)
     print("=====")
+    return json_data
+
+# gen quiz related to paintings Bible books
+async def gen_paintings(painting_name="unknown", how_many=10, progress_text=None, progress_bar=None):
+    header_query= f"Generate {how_many} of quiz questions for a painting. The name of the painting is {painting_name}, Write everything in Korean."
+    query_to_llm = header_query + 'Include question, options, answer, and reference(what year the painting related of). Provide a certain format in JSON : "{ "data": [{ "question":"", "difficulty": (number 1-10), options: [...], answer: "", reference: "", episode_num: "", painter_name:"", type: "painting"]} Do not put any other message besides the JSON format. (even without ```json or ```)'
+    print(f"query_to_llm : {query_to_llm}")
+
+    json_data = await gpt4o_json(query_to_llm)
 
     for index, quiz in enumerate(json_data['data']):
         print(f"{index}: {quiz}")
@@ -41,7 +43,9 @@ async def gen_paintings(painting_name="unknown", how_many=10, progress_text=None
                         'p_options': quiz['options'],
                         'p_answer': str(quiz['answer']),
                         'p_type': str(quiz['type']),
-                        'p_reference': str(quiz['reference'])
+                        'p_reference': str(quiz['reference']),
+                        'p_episode_num': str(quiz['episode_num']),
+                        'p_painter_name': str(quiz['painter_name'])
                     }).execute()
         print("result_rpc ====> " + str(result_rpc.data))
         st.text_area("생성된 퀴즈", value=str(result_rpc.data) + "\n\n" + str(quiz), height=110)
@@ -96,9 +100,18 @@ st.set_page_config(
     }
 )
 
-st.header("AI 명화퀴즈 - 관리자 페이지")
+st.header("111")
 
 tab1, tab2, tab3, tab4 = st.tabs(["1.DB 관리", "2.퀴즈 생성", "3.이미지 업로드", "4.만든 퀴즈 풀어보기"])
+
+# Global characters dictionary
+characters = {
+    "클로드 모네": "Claude_Monet", 
+    "폴 고갱": "Paul_Gauguin", 
+    "빈센트 반 고흐": "Vincent_van_Gogh", 
+    "카라바조": "Caravaggio", 
+    "파블로 피카소": "Pablo_Picasso"
+}
 
 with tab1:
     col1, col2 = st.columns(2)
@@ -142,8 +155,9 @@ with tab1:
             run(check_redundant())
 
 with tab2:
-    #book_name = st.text_input("Book name", placeholder="예: Genesis, Exodus, 창세기, 출애굽기 등...")
-    painting_name = st.text_input("명화 이름/설명", placeholder="예: 레오나르도 다빈치의 최후의 만찬, 카라바조의 도마뱀에 물린 소년 등...")
+    selected_korean_character = st.selectbox("작가를 선택하세요", list(characters.keys()), key="tab2_character")
+    painting_name = selected_korean_character
+    episode_num = st.text_input("에피소드 번호", placeholder="예: 1,2,3...")
     count = st.text_input("개수", value="2", max_chars=2)
     button1_clicked = st.button(f"{count}개의 퀴즈 만들기")
     if button1_clicked:
@@ -159,17 +173,9 @@ with tab2:
         progress_bar.empty()
 
 with tab3:
-    characters = {
-        "클로드 모네": "Claude_Monet", 
-        "폴 고갱": "Paul_Gauguin", 
-        "빈센트 반 고흐": "Vincent_van_Gogh", 
-        "카라바조": "Caravaggio", 
-        "파블로 피카소": "Pablo_Picasso"
-    }
-    
     col1, col2 = st.columns(2)
     with col1:
-        selected_korean_character = st.selectbox("작가를 선택하세요", list(characters.keys()))
+        selected_korean_character = st.selectbox("작가를 선택하세요", list(characters.keys()), key="tab3_character")
         selected_english_character = characters[selected_korean_character]
     with col2:
         painting_number = st.number_input("에피소드 번호", min_value=1, value=1, step=1)
@@ -217,7 +223,7 @@ with tab3:
                 st.error(f"업로드 중 오류가 발생했습니다: {str(e)}")
 
 with tab4:
-    # Use the same characters dictionary from tab3
+    # Use the global characters dictionary
     selected_korean_character = st.selectbox("작가를 선택하세요", list(characters.keys()), key="quiz_character")
     selected_english_character = characters[selected_korean_character]
     painting_number = st.number_input("에피소드 번호", min_value=1, value=1, step=1, key="quiz_painting_number")
