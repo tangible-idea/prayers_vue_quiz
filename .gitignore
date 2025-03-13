@@ -25,3 +25,4 @@ dist-ssr
 env
 __pycache__/llm.cpython-312.pyc
 __pycache__/supabase_client.cpython-312.pyc
+myenv
